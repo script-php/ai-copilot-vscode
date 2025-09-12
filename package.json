@@ -1,0 +1,101 @@
+{
+  "name": "ai-copilot-chat",
+  "displayName": "AI Copilot Chat",
+  "description": "Chat with AI assistant with file and code attachment support",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:aiCopilot.toggleChat"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "aiCopilot.toggleChat",
+        "title": "Toggle AI Chat",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "aiCopilot.addFileToChat",
+        "title": "Add to Copilot"
+      },
+      {
+        "command": "aiCopilot.addSelectionToChat",
+        "title": "Add Selection to Copilot"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "aiCopilot.addFileToChat",
+          "group": "navigation",
+          "when": "!explorerResourceIsFolder"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "aiCopilot.addSelectionToChat",
+          "group": "navigation",
+          "when": "editorHasSelection"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "AI Copilot",
+      "properties": {
+        "aiCopilot.serverUrl": {
+          "type": "string",
+          "default": "http://localhost:1234",
+          "description": "AI Server URL (e.g., LM Studio endpoint)"
+        },
+        "aiCopilot.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API Key (if required by your AI server)"
+        },
+        "aiCopilot.model": {
+          "type": "string",
+          "default": "local-model",
+          "description": "Model name to use"
+        }
+      }
+    },
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "aiCopilot",
+          "title": "AI Copilot",
+          "icon": "$(comment-discussion)"
+        }
+      ]
+    },
+    "views": {
+      "aiCopilot": [
+        {
+          "type": "webview",
+          "id": "aiCopilotChat",
+          "name": "Chat",
+          "when": "aiCopilot.chatVisible"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "typescript": "^4.9.4"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}
