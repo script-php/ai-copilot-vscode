@@ -367,6 +367,17 @@ export class ChatProvider implements vscode.WebviewViewProvider {
             }
         });
 
+        // Add this helper function to escape HTML
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         function updateChatUI() {
             const chatMessages = document.getElementById('chatMessages');
             chatMessages.innerHTML = '';
@@ -375,7 +386,7 @@ export class ChatProvider implements vscode.WebviewViewProvider {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = \`message \${message.role}\`;
                 
-                let content = message.content;
+                let content = escapeHtml(message.content);
                 // Simple markdown-like formatting
                 content = content.replace(/\`\`\`([\\s\\S]*?)\`\`\`/g, '<pre><code>$1</code></pre>');
                 content = content.replace(/\`([^\`]*)\`/g, '<code>$1</code>');

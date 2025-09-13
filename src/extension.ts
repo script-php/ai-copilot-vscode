@@ -77,6 +77,42 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Set initial context
     vscode.commands.executeCommand('setContext', 'aiCopilot.chatVisible', true);
+
+    // Status bar item with more info
+    const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    
+    const updateStatusBar = () => {
+        const config = vscode.workspace.getConfiguration('aiCopilot');
+        const enabled = config.get<boolean>('completionsEnabled', true);
+        statusBarItem.text = `$(copilot) AI Copilot ${enabled ? '✓' : '✗'}`;
+        statusBarItem.tooltip = `AI Copilot ${enabled ? 'enabled' : 'disabled'} - Click to toggle chat`;
+        statusBarItem.command = 'aiCopilot.toggleChat';
+    };
+    
+    updateStatusBar();
+    statusBarItem.show();
+    context.subscriptions.push(statusBarItem);
+
+    // Listen for configuration changes
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration(event => {
+            if (event.affectsConfiguration('aiCopilot')) {
+                updateStatusBar();
+                console.log('AI Copilot configuration changed');
+            }
+        })
+    );
+
+    // Log when extension is fully loaded
+    setTimeout(() => {
+        console.log('AI Copilot extension fully activated');
+        const config = vscode.workspace.getConfiguration('aiCopilot');
+        console.log('Current configuration:', {
+            serverUrl: config.get('serverUrl'),
+            model: config.get('model'),
+            completionsEnabled: config.get('completionsEnabled')
+        });
+    }, 1000);
 }
 
 export function deactivate() {}

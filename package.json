@@ -2,15 +2,26 @@
   "name": "ai-copilot-chat",
   "displayName": "AI Copilot Chat",
   "description": "Chat with AI assistant with file and code attachment support",
-  "version": "0.0.1",
+  "version": "0.0.3",
+  "publisher": "YoYo",
+  "repository": {
+    "url": "https://github.com/script-php/ai-copilot-vscode"
+  },
   "engines": {
     "vscode": "^1.74.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Machine Learning",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "ai", 
+    "copilot", 
+    "chat"
   ],
   "activationEvents": [
-    "onCommand:aiCopilot.toggleChat"
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -22,11 +33,28 @@
       },
       {
         "command": "aiCopilot.addFileToChat",
-        "title": "Add to Copilot"
+        "title": "Add to Copilot Chat"
       },
       {
         "command": "aiCopilot.addSelectionToChat",
-        "title": "Add Selection to Copilot"
+        "title": "Add Selection to Copilot Chat"
+      },
+      {
+        "command": "aiCopilot.debugConfig",
+        "title": "Debug AI Copilot Config",
+        "icon": "$(debug)"
+      },
+      {
+        "command": "aiCopilot.testApi",
+        "title": "Test AI API Connection",
+        "icon": "$(globe)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "aiCopilot.toggleChat",
+        "key": "ctrl+alt+c",
+        "mac": "cmd+alt+c"
       }
     ],
     "menus": {
@@ -42,6 +70,16 @@
           "command": "aiCopilot.addSelectionToChat",
           "group": "navigation",
           "when": "editorHasSelection"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "aiCopilot.debugConfig",
+          "when": "true"
+        },
+        {
+          "command": "aiCopilot.testApi",
+          "when": "true"
         }
       ]
     },
