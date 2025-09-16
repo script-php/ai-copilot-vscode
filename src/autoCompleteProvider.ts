@@ -2,14 +2,19 @@
 import * as vscode from 'vscode';
 import axios from 'axios';
 import { ContextService, EditHistory, ViewedSnippet, FileContext } from './contextService';
+import { AILogger } from './logger'; // TODO: to remove later
+import { ChatProvider } from './chatProvider';
 
+let chatProvider: ChatProvider | undefined;
 export class AutoCompleteProvider implements vscode.InlineCompletionItemProvider {
     private lastRequestTime = 0;
     private readonly debounceMs = 300; // Debounce requests
     private contextService: ContextService;
+    private logger: AILogger; // Add logger instance // TODO: to remove later
 
     constructor(contextService: ContextService) {
         this.contextService = contextService;
+        this.logger = new AILogger(); // Initialize logger // TODO: to remove later
     }
 
     async provideInlineCompletionItems(
@@ -61,6 +66,9 @@ export class AutoCompleteProvider implements vscode.InlineCompletionItemProvider
         // Create the prompt using the copilot format
         const prompt = this.buildCopilotPrompt(context);
 
+        // Log the prompt before sending
+        this.logger.logPrompt(prompt, context); // TODO: to remove later
+
         const headers: any = {
             'Content-Type': 'application/json'
         };
@@ -84,13 +92,13 @@ export class AutoCompleteProvider implements vscode.InlineCompletionItemProvider
                             content: prompt
                         }
                     ],
-                    temperature: 0.2,
+                    temperature: 0.7,
                     max_tokens: 500,
                     stop: ['```', '\n\n\n'] // Stop at code block end or too many newlines
                 },
                 { 
                     headers,
-                    timeout: 5000 // 5 second timeout for autocomplete
+                    timeout: 50000 // 5 second timeout for autocomplete
                 }
             );
 
@@ -103,8 +111,20 @@ export class AutoCompleteProvider implements vscode.InlineCompletionItemProvider
             // Clean up the response
             completion = this.cleanCompletion(completion, context);
             
+            // Log the successful response
+            this.logger.logPrompt(prompt, context, completion); // TODO: to remove later
+            
             return completion;
         } catch (error) {
+            // Log the error
+            // TODO: to remove later
+            if (axios.isAxiosError(error)) {
+                this.logger.log(`AI Request Failed: ${error.message}`, 'ERROR', {
+                    code: error.code,
+                    url: serverUrl
+                });
+            }
+
             if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
                 // Timeout - don't show error, just return null
                 return null;

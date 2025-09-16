@@ -1,7 +1,9 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs'; // TODO: to remove later
 import { ChatProvider } from './chatProvider';
 import { AutoCompleteProvider } from './autoCompleteProvider';
 import { ContextService } from './contextService';
+import { AILogger } from './logger'; // TODO: to remove later
 
 let chatProvider: ChatProvider | undefined;
 
@@ -10,6 +12,16 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize chat provider
     chatProvider = new ChatProvider(context.extensionUri);
+
+    // Initialize logger
+    const logger = new AILogger(); // TODO: to remove later
+
+    // Log extension activation
+    // TODO: to remove later
+    logger.log('Extension activated', 'SYSTEM', {
+        vscodeVersion: vscode.version,
+        extensionVersion: context.extension.packageJSON.version
+    });
 
     // Create a single instance of the context service
     const contextService = new ContextService();
@@ -87,7 +99,19 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    context.subscriptions.push(toggleChatCommand, addFileCommand, addSelectionCommand, completionProvider);
+    // TODO: to remove later
+    // 
+    const openLogCommand = vscode.commands.registerCommand('aiCopilot.openLogFile', async () => {
+        const logPath = logger.getLogFilePath();
+        if (logPath && fs.existsSync(logPath)) {
+            const document = await vscode.workspace.openTextDocument(logPath);
+            await vscode.window.showTextDocument(document);
+        } else {
+            vscode.window.showInformationMessage('No log file found or workspace not open');
+        }
+    });
+
+    context.subscriptions.push(toggleChatCommand, addFileCommand, addSelectionCommand, completionProvider, openLogCommand);
 
     // Set initial context
     vscode.commands.executeCommand('setContext', 'aiCopilot.chatVisible', true);
