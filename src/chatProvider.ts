@@ -401,8 +401,8 @@ export class ChatProvider implements vscode.WebviewViewProvider {
                         const attachmentSpan = document.createElement('span');
                         attachmentSpan.className = 'attachment';
                         attachmentSpan.textContent = attachment.type === 'file' ? 
-                            \`📄 \${attachment.name}\` : 
-                            \`📝 \${attachment.name} (\${attachment.lines?.start}-\${attachment.lines?.end})\`;
+                            \`ðŸ“„ \${attachment.name}\` : 
+                            \`ðŸ“ \${attachment.name} (\${attachment.lines?.start}-\${attachment.lines?.end})\`;
                         attachmentsDiv.appendChild(attachmentSpan);
                     });
                     messageDiv.appendChild(attachmentsDiv);
@@ -425,7 +425,7 @@ export class ChatProvider implements vscode.WebviewViewProvider {
                 pendingAttachments.forEach((attachment, index) => {
                     const attachmentSpan = document.createElement('span');
                     attachmentSpan.className = 'attachment';
-                    attachmentSpan.innerHTML = \`\${attachment.type === 'file' ? '📄' : '📝'} \${attachment.name}\${attachment.lines ? \` (\${attachment.lines.start}-\${attachment.lines.end})\` : ''} ❌\`;
+                    attachmentSpan.innerHTML = \`\${attachment.type === 'file' ? 'ðŸ“„' : 'ðŸ“'} \${attachment.name}\${attachment.lines ? \` (\${attachment.lines.start}-\${attachment.lines.end})\` : ''} âŒ\`;
                     attachmentSpan.onclick = () => removeAttachment(index);
                     attachmentList.appendChild(attachmentSpan);
                 });

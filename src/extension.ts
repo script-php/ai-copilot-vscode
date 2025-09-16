@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { ChatProvider } from './chatProvider';
+import { AutoCompleteProvider } from './autoCompleteProvider';
+import { ContextService } from './contextService';
 
 let chatProvider: ChatProvider | undefined;
 
@@ -8,6 +10,18 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize chat provider
     chatProvider = new ChatProvider(context.extensionUri);
+
+    // Create a single instance of the context service
+    const contextService = new ContextService();
+    
+    // Create the autocomplete provider with the context service
+    const autoCompleteProvider = new AutoCompleteProvider(contextService);
+    
+    // Register the inline completion provider
+    const completionProvider = vscode.languages.registerInlineCompletionItemProvider(
+        { pattern: '**' }, // Apply to all files, or specify specific languages
+        autoCompleteProvider
+    );
 
     // Register webview provider
     context.subscriptions.push(
@@ -73,7 +87,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    context.subscriptions.push(toggleChatCommand, addFileCommand, addSelectionCommand);
+    context.subscriptions.push(toggleChatCommand, addFileCommand, addSelectionCommand, completionProvider);
 
     // Set initial context
     vscode.commands.executeCommand('setContext', 'aiCopilot.chatVisible', true);
@@ -84,7 +98,7 @@ export function activate(context: vscode.ExtensionContext) {
     const updateStatusBar = () => {
         const config = vscode.workspace.getConfiguration('aiCopilot');
         const enabled = config.get<boolean>('completionsEnabled', true);
-        statusBarItem.text = `$(copilot) AI Copilot ${enabled ? '✓' : '✗'}`;
+        statusBarItem.text = `$(copilot) AI Copilot ${enabled ? 'âœ“' : 'âœ—'}`;
         statusBarItem.tooltip = `AI Copilot ${enabled ? 'enabled' : 'disabled'} - Click to toggle chat`;
         statusBarItem.command = 'aiCopilot.toggleChat';
     };
