@@ -12,7 +12,7 @@ interface PromptElement {
     metadata?: any;
 }
 
-// Add this class to handle consistent formatting
+// Add this class to handle consistent formatting 
 class PromptFormatter {
     static singleBreak(): PromptElement {
         return { priority: 0, content: "", isBreak: true };
@@ -43,6 +43,7 @@ export class AutoCompleteProvider implements vscode.InlineCompletionItemProvider
     private readonly debounceMs = 300; // Debounce requests
     private contextService: ContextService;
     private logger: AILogger; // Add logger instance // TODO: to remove later
+    private isManualTrigger = false;
 
     constructor(contextService: ContextService) {
         this.contextService = contextService;
@@ -55,6 +56,18 @@ export class AutoCompleteProvider implements vscode.InlineCompletionItemProvider
         context: vscode.InlineCompletionContext,
         token: vscode.CancellationToken
     ): Promise<vscode.InlineCompletionItem[] | vscode.InlineCompletionList | null> {
+
+        const config = vscode.workspace.getConfiguration('aiCopilot');
+        const autoCompleteEnabled = config.get<boolean>('completionsEnabled', true);
+
+        if (!this.isManualTrigger && !autoCompleteEnabled) {
+            return null;
+        }
+        
+        // Reset manual trigger flag after use
+        if (this.isManualTrigger) {
+            this.isManualTrigger = false;
+        }
         
         // Debounce requests
         const now = Date.now();
@@ -81,6 +94,18 @@ export class AutoCompleteProvider implements vscode.InlineCompletionItemProvider
             return null;
         }
     }
+    
+     public async triggerManualCompletion(
+        document: vscode.TextDocument,
+        position: vscode.Position
+    ): Promise<string | null> {
+        this.isManualTrigger = true;
+        try {
+            return await this.generateCompletion(document, position, new vscode.CancellationTokenSource().token);
+        } finally {
+            this.isManualTrigger = false;
+        }
+    }
 
     //
     private async generateCompletion(
@@ -97,7 +122,7 @@ export class AutoCompleteProvider implements vscode.InlineCompletionItemProvider
         const context = await this.buildContext(document, position);
 
         // Adjust token limit based on model size
-        let maxPromptTokens = 3500; // Default for larger models
+        let maxPromptTokens = config.get<number>('maxTokens') || 500; // Default for larger models
 
         // if (model.includes('1.5b') || model.includes('small') || model.includes('tiny')) {
         //     maxPromptTokens = 1500; // Much smaller for tiny models
@@ -114,8 +139,10 @@ export class AutoCompleteProvider implements vscode.InlineCompletionItemProvider
         const promptElements = this.buildStructuredPrompt(context, maxPromptTokens);
         const finalPrompt = this.renderPromptElements(promptElements);
 
-        // Log the prompt before sending
+        // Log the prompt before sending 
         this.logger.logPrompt(finalPrompt, context); // TODO: to remove later
+
+        
 
         const headers: any = {
             'Content-Type': 'application/json'
@@ -140,16 +167,17 @@ export class AutoCompleteProvider implements vscode.InlineCompletionItemProvider
                             content: finalPrompt
                         }
                     ],
-                    temperature: 0.7,
-                    max_tokens: 500,
+                    temperature: config.get<number>('temperature', 0.2),
+                    max_tokens: config.get<number>('maxTokens', 200),
                     stop: ['```', '\n\n\n'] // Stop at code block end or too many newlines
                 },
                 { 
                     headers,
-                    timeout: 50000 // 5 second timeout for autocomplete
+                    timeout: 500000 //config.get<number>('timeout', 5000) // 5 second timeout for autocomplete
                 }
             );
 
+            // 
             if (token.isCancellationRequested) {
                 return null;
             }
@@ -234,76 +262,6 @@ export class AutoCompleteProvider implements vscode.InlineCompletionItemProvider
     private getCurrentTokenCount(elements: PromptElement[]): number {
         return this.estimateTokens(this.renderPromptElements(elements));
     }
-
-//     private buildOriginalCopilotSections(context: any): string {
-//         const sections: string[] = [];
-
-//         // Add recently viewed code snippets
-//         sections.push(`<|recently_viewed_code_snippets|>`);
-//         context.viewedSnippets.forEach((snippet: ViewedSnippet, index: number) => {
-//             sections.push(`<|recently_viewed_code_snippet|>`);
-//             sections.push(`File: ${snippet.fileName} (${snippet.language})`);
-//             sections.push(`${this.addLineNumbers(snippet.content)}`);
-//             sections.push(`<|/recently_viewed_code_snippet|>`);
-//         });
-//         sections.push(`<|/recently_viewed_code_snippets|>\n`);
-
-//         // Add current file content
-//         sections.push(`<|current_file_content|>`);
-//         sections.push(`${context.currentFileContent}`);
-//         sections.push(`<|/current_file_content|>\n`);
-
-//         // Add edit diff history
-//         sections.push(`<|edit_diff_history|>`);
-//         context.editHistory.forEach((edit: EditHistory) => {
-//             const changeDescription = edit.oldText ? 
-//                 `"${edit.oldText}" -> "${edit.newText}"` : 
-//                 `Added: "${edit.newText}"`;
-//             sections.push(`Change in ${context.fileName}: ${changeDescription} at line ${edit.range.start.line + 1}`);
-//         });
-//         sections.push(`<|/edit_diff_history|>\n`);
-
-//         // Add file analysis
-//         if (context.fileContext) {
-//             sections.push(`<|file_analysis|>`);
-//             sections.push(`Language: ${context.fileContext.language}`);
-//             if (context.fileContext.imports.length > 0) {
-//                 sections.push(`Imports: ${context.fileContext.imports.join(', ')}`);
-//             }
-//             if (context.fileContext.functions.length > 0) {
-//                 sections.push(`Functions: ${context.fileContext.functions.join(', ')}`);
-//             }
-//             if (context.fileContext.classes.length > 0) {
-//                 sections.push(`Classes: ${context.fileContext.classes.join(', ')}`);
-//             }
-//             if (context.fileContext.variables.length > 0) {
-//                 sections.push(`Variables: ${context.fileContext.variables.slice(0, 10).join(', ')}`); // Limit to first 10
-//             }
-//             sections.push(`<|/file_analysis|>\n`);
-//         }
-
-//         // Add area around code to edit
-//         sections.push(`<|area_around_code_to_edit|>`);
-//         sections.push(context.areaAroundCode);
-//         sections.push(`<|/area_around_code_to_edit|>\n`);
-
-//         // Add code to edit (the most important section)
-//         sections.push(`<|code_to_edit|>`);
-//         sections.push(`${context.codeToEdit}`);
-//         sections.push(`<|/code_to_edit|>\n`);
-
-//         // Add the final instruction from the continuation
-//         sections.push(`The developer was working on a section of code within the tags \`code_to_edit\` in the file located at \`${context.fileName}\`. Using the given \`recently_viewed_code_snippets\`, \`current_file_content\`, \`edit_diff_history\`, \`area_around_code_to_edit\`, and the cursor position marked as \`<|cursor|>\`, please continue the developer's work. Update the \`code_to_edit\` section by predicting and completing the changes they would have made next. Provide the revised code that was between the \`<|code_to_edit|>\` and \`<|/code_to_edit|>\` tags with the following format, but do not include the tags themselves.
-
-// \`\`\`
-// // Your revised code goes here
-// \`\`\`\n\n`);
-
-// sections.push(`Please provide the completed code for the cursor position:`);
-
-//         return sections.join('\n');
-//     }
-
 
     private buildTokenAwareCopilotSections(context: any, availableTokens: number): { content: string; tokensUsed: number } {
         const sections: string[] = [];
@@ -453,26 +411,6 @@ export class AutoCompleteProvider implements vscode.InlineCompletionItemProvider
             currentTokens += this.estimateTokens(editHistoryContent) + 100;
         }
 
-        // Edit history section
-        // elements.push({
-        //     priority: 900,
-        //     content: "This is a sequence of edits that I made on these files, starting from the oldest to the newest:"
-        // });
-
-        // elements.push(PromptFormatter.singleBreak());
-        // elements.push({ priority: 898, content: "<|edits_to_original_code|>" });
-        // elements.push(PromptFormatter.singleBreak());
-
-        // // Add document diffs with high priority
-        // elements.push({
-        //     priority: 300,
-        //     content: this.renderDocumentDiffs(context)
-        // });
-
-        // elements.push(PromptFormatter.singleBreak());
-        // elements.push({ priority: 895, content: "<|/edits_to_original_code|>" });
-        // elements.push(PromptFormatter.doubleBreak());
-
         // Current editing section - always include
         const currentEditHeader = `Here is the piece of code I am currently editing in ${context.fileName}:`;
         elements.push({ priority: 300, content: currentEditHeader });
@@ -490,32 +428,6 @@ export class AutoCompleteProvider implements vscode.InlineCompletionItemProvider
         const finalInstruction = "Based on my most recent edits, what will I do next? Rewrite the code between <|code_to_edit|> and <|/code_to_edit|> based on what I will do next. Do not skip any lines. Do not be lazy.";
         elements.push({ priority: 280, content: finalInstruction });
         currentTokens += this.estimateTokens(finalInstruction);
-
-
-
-
-
-        // Current editing section with highest priority using original copilot format
-        // elements.push({
-        //     priority: 300,
-        //     content: `Here is the piece of code I am currently editing in ${context.fileName}:`
-        // });
-
-        // elements.push(PromptFormatter.doubleBreak());
-
-        // Now add all the original copilot sections with proper priorities
-        // elements.push({
-        //     priority: 350,
-        //     content: this.buildOriginalCopilotSections(context)
-        // });
-
-        // elements.push(PromptFormatter.doubleBreak());
-
-        // Final instruction from original copilot
-        // elements.push({
-        //     priority: 280,
-        //     content: "Based on my most recent edits, what will I do next? Rewrite the code between <|code_to_edit|> and <|/code_to_edit|> based on what I will do next. Do not skip any lines. Do not be lazy."
-        // });
 
         return elements;
     }

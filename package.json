@@ -2,7 +2,7 @@
   "name": "ai-copilot-chat",
   "displayName": "AI Copilot Chat",
   "description": "AI-powered coding assistant with intelligent autocomplete and chat functionality",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "publisher": "YoYo",
   "author": {
     "name": "YoYo"
@@ -41,6 +41,12 @@
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
+      {
+          "command": "aiCopilot.triggerCompletion",
+          "title": "Trigger AI Completion",
+          "category": "AI Copilot",
+          "icon": "$(sparkle)"
+      },
       {
         "command": "aiCopilot.toggleChat",
         "title": "Toggle AI Chat",
@@ -85,6 +91,12 @@
       }
     ],
     "keybindings": [
+      {
+          "command": "aiCopilot.triggerCompletion",
+          "key": "ctrl+alt+space",
+          "mac": "cmd+alt+space",
+          "when": "editorTextFocus"
+      },
       {
         "command": "aiCopilot.toggleChat",
         "key": "ctrl+alt+c",

@@ -48,6 +48,25 @@ export function activate(context: vscode.ExtensionContext) {
         )
     );
 
+    const manualCompleteCommand = vscode.commands.registerCommand('aiCopilot.triggerCompletion', async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (editor) {
+            const position = editor.selection.active;
+            const completion = await autoCompleteProvider.triggerManualCompletion(editor.document, position);
+            
+            if (completion) {
+                // Insert the completion at the cursor position
+                await editor.edit(editBuilder => {
+                    editBuilder.insert(position, completion);
+                });
+                
+                vscode.window.showInformationMessage('AI completion applied');
+            } else {
+                vscode.window.showInformationMessage('No completion available');
+            }
+        }
+    });
+
     // Command to toggle chat visibility
     const toggleChatCommand = vscode.commands.registerCommand('aiCopilot.toggleChat', () => {
         const config = vscode.workspace.getConfiguration('aiCopilot');
@@ -111,7 +130,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    context.subscriptions.push(toggleChatCommand, addFileCommand, addSelectionCommand, completionProvider, openLogCommand);
+    context.subscriptions.push(toggleChatCommand, addFileCommand, addSelectionCommand, completionProvider, openLogCommand, manualCompleteCommand);
 
     // Set initial context
     vscode.commands.executeCommand('setContext', 'aiCopilot.chatVisible', true);
@@ -125,6 +144,10 @@ export function activate(context: vscode.ExtensionContext) {
         statusBarItem.text = `$(copilot) AI Copilot ${enabled ? 'âœ“' : 'âœ—'}`;
         statusBarItem.tooltip = `AI Copilot ${enabled ? 'enabled' : 'disabled'} - Click to toggle chat`;
         statusBarItem.command = 'aiCopilot.toggleChat';
+
+        statusBarItem.text = `$(copilot) AI Copilot ${enabled ? 'Auto' : 'Manual'}`;
+        statusBarItem.tooltip = `AI Copilot ${enabled ? 'Auto-complete enabled' : 'Click for manual completion'} - Click to toggle`;
+        
     };
     
     updateStatusBar();
