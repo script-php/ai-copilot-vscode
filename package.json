@@ -2,7 +2,7 @@
   "name": "ai-copilot-chat",
   "displayName": "AI Copilot Chat",
   "description": "AI-powered coding assistant with intelligent autocomplete and chat functionality",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "publisher": "YoYo",
   "author": {
     "name": "YoYo"

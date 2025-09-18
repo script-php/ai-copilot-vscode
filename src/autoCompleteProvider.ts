@@ -169,7 +169,7 @@ export class AutoCompleteProvider implements vscode.InlineCompletionItemProvider
                     ],
                     temperature: config.get<number>('temperature', 0.2),
                     max_tokens: config.get<number>('maxTokens', 200),
-                    stop: ['```', '\n\n\n'] // Stop at code block end or too many newlines
+                    //stop: ['```', '\n\n\n'] // Stop at code block end or too many newlines
                 },
                 { 
                     headers,
